@@ -7,6 +7,7 @@ import pafy
 import lazyConfig
 from pathlib import Path
 
+
 def main():
     cfg_path = Path("config").resolve()
     cfg = lazyConfig.from_path(
@@ -29,14 +30,19 @@ def main():
         brief="Plays music (from a stream)",
         description=f"Plays music, optionally from a youtube url or stream type. Valid stream types include: {list(cfg.get('streams'))}",
     )
-    async def play(ctx: Context, stream):
-        stream = stream or "lofi"
+    async def play(ctx: Context, streamTypeOrUrl, streamId="1"):
+        if not streamTypeOrUrl or streamTypeOrUrl == "":
+            streamTypeOrUrl = streamTypeOrUrl or "lofi"
+
         streams = cfg.get("streams")
         url = ""
-        if stream in streams:
-            url = streams.get(stream)
+        if streamTypeOrUrl in streams:
+            try:
+                url = streams.get(streamTypeOrUrl).get(streamId)
+            except:
+                return await ctx.channel.send("Error: invalid stream type or stream id! Type '#help play' for more information.")
         else:
-            url = stream
+            url = streamTypeOrUrl
         if "youtube" in url:
             video = pafy.new(url)
             best = video.getbest()
@@ -52,7 +58,7 @@ def main():
                 except:
                     pass
                 vc.play(discord.FFmpegPCMAudio(playurl))
-                await ctx.channel.send("Now playing music in your vc!")
+                await ctx.channel.send(f"Now playing {url}")
             else:
                 await ctx.channel.send("You are not connected to a voice channel.")
         else:
@@ -67,7 +73,7 @@ def main():
                 except:
                     pass
                 vc.play(discord.FFmpegPCMAudio(url))
-                await ctx.channel.send("Now playing music in your vc!")
+                await ctx.channel.send(f"Now playing {url}")
             else:
                 await ctx.channel.send("You are not connected to a voice channel.")
 
