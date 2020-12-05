@@ -52,6 +52,48 @@ class InvalidVoiceChannel(VoiceConnectionError):
     """Exception for cases of invalid Voice Channels."""
 
 
+class FFmpegSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, requester):
+        super().__init__(source)
+        self.requester = requester
+
+        self.title = data.get("title")
+        self.web_url = data.get("webpage_url")
+
+        # YTDL info dicts (data) have other useful information you might want
+        # https://github.com/rg3/youtube-dl/blob/master/README.md
+
+    def __getitem__(self, item: str):
+        """Allows us to access attributes similar to a dict.
+        This is only useful when you are NOT downloading.
+        """
+        return self.__getattribute__(item)
+
+    def __setitem__(self, item: str, val):
+        """Allows us to access attributes similar to a dict.
+        This is only useful when you are NOT downloading.
+        """
+        return self.__setattr__(item, val)
+
+    @classmethod
+    async def create_source(cls, data, ctx, search: str, *, loop):
+        loop = loop or asyncio.get_event_loop()
+
+        await ctx.send(
+            f'```ini\n[Added {data["title"]} to the Queue.]\n```', delete_after=15
+        )
+        return cls(discord.FFmpegPCMAudio(search), data=data, requester=ctx.author)
+
+    @classmethod
+    async def regather_stream(cls, data, *, loop):
+        """Used for preparing a stream, instead of downloading.
+        Since Youtube Streaming links expire."""
+        loop = loop or asyncio.get_event_loop()
+        requester = data["requester"]
+
+        return cls(discord.FFmpegPCMAudio(data["url"]), data=data, requester=requester)
+
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, requester):
         super().__init__(source)
@@ -69,6 +111,12 @@ class YTDLSource(discord.PCMVolumeTransformer):
         """
         return self.__getattribute__(item)
 
+    def __setitem__(self, item: str, val):
+        """Allows us to access attributes similar to a dict.
+        This is only useful when you are NOT downloading.
+        """
+        return self.__setattr__(item, val)
+
     @classmethod
     async def create_source(cls, ctx, search: str, *, loop, download=False):
         loop = loop or asyncio.get_event_loop()
@@ -84,14 +132,16 @@ class YTDLSource(discord.PCMVolumeTransformer):
             f'```ini\n[Added {data["title"]} to the Queue.]\n```', delete_after=15
         )
 
-        if download:
+        """         if download:
             source = ytdl.prepare_filename(data)
         else:
             return {
                 "webpage_url": data["webpage_url"],
                 "requester": ctx.author,
                 "title": data["title"],
-            }
+            } """
+
+        source = data["formats"][0]["url"]
 
         return cls(discord.FFmpegPCMAudio(source), data=data, requester=ctx.author)
 
@@ -158,25 +208,13 @@ class MusicPlayer:
                     return self.destroy(self._guild)
                 return
 
-            if not isinstance(source, YTDLSource):
-                # Source was probably a stream (not downloaded)
-                # So we should regather to prevent stream expiration
-                try:
-                    source = await YTDLSource.regather_stream(
-                        source, loop=self.bot.loop
-                    )
-                except Exception as e:
-                    await self._channel.send(
-                        f"There was an error processing your song.\n"
-                        f"```css\n[{e}]\n```"
-                    )
-                    continue
-
-            source.volume = self.volume
+            source["volume"] = self.volume
             self.current = source
 
+            if isinstance(source, FFmpegSource):
+                source = source.original
             self._guild.voice_client.play(
-                source,
+                source.original,
                 after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set),
             )
             self.np = await self._channel.send(
@@ -326,29 +364,45 @@ class Music(commands.Cog):
 
         player = self.get_player(ctx)
         source = None
-        if "youtube" in search:
-
+        url = ""
+        streams = cfg.get("streams", {})
+        if not search or search == "":
+            search = search or "lofi"
+        if search in streams:
+            try:
+                url = streams.get(search).get(streamId)
+            except:
+                return await ctx.channel.send(
+                    "Error: invalid stream type or stream id! Type '#help play' for more information."
+                )
+        else:
+            url = search
+        if "youtube" in url:
             # If download is False, source will be a dict which will be used later to regather the stream.
             # If download is True, source will be a discord.FFmpegPCMAudio with a VolumeTransformer.
             try:
                 async with timeout(2):
                     source = await YTDLSource.create_source(
-                        ctx, search, loop=self.bot.loop, download=True
+                        ctx, search, loop=self.bot.loop, download=False
                     )
             except:
                 source = await YTDLSource.create_source(
                     ctx, search, loop=self.bot.loop, download=False
                 )
         else:
-            streams = cfg.get("streams")
             try:
-                url = streams.get(search).get(streamId)
-                source = discord.FFmpegPCMAudio(url)
-            except:
-                return await ctx.channel.send(
-                    "Error: invalid stream type or stream id! Type '#help play' for more information."
+                source = await FFmpegSource.create_source(
+                    {"title": search}, ctx, url, loop=self.bot.loop
                 )
-
+            except Exception as err:
+                if "ffmpeg" in err.__repr__():
+                    print(err)
+                    return await ctx.channel.send(
+                        "Error: ffmpeg not found! Contact the developer or host of this bot if this issue persists."
+                    )
+                return await ctx.channel.send(
+                    "Error: invalid stream url! Type '#help play' for more information."
+                )
         await player.queue.put(source)
 
     @commands.command(name="pause")
