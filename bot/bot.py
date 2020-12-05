@@ -6,8 +6,7 @@ from discord.utils import get
 import pafy
 import lazyConfig
 from pathlib import Path
-
-
+from .player import setup as setupPlayer
 def main():
     cfg_path = Path("config").resolve()
     cfg = lazyConfig.from_path(
@@ -15,87 +14,20 @@ def main():
     )
     bot = commands.Bot(command_prefix=cfg.bot.get("prefix", "%"))
 
-    def vc_check(ctx):
-        voice_client = get(ctx.bot.voice_clients, guild=ctx.guild)
-        return voice_client, voice_client and voice_client.is_connected()
-
+    setupPlayer(bot)
+ 
     @bot.event
     async def on_command_error(ctx, error):
         if isinstance(error, CommandNotFound):
             return await ctx.channel.send(f"Invalid command: {error}")
-        raise error
+       	else:
+            return await ctx.channel.send(f"Unknown error: {error}")
 
     @bot.command(name="streamlist")
     async def streams(ctx: Context):
         await ctx.channel.send(
             "Go to https://bot.neonradio.net/streams.html for a list of music streams."
         )
-
-    @bot.command(
-        name="play",
-        brief="Plays music (from a stream)",
-        description=f"Plays music, optionally from a youtube url or stream type. Valid stream types include: {list(cfg.get('streams'))}",
-    )
-    async def play(ctx: Context, streamTypeOrUrl, streamId="1"):
-        if not streamTypeOrUrl or streamTypeOrUrl == "":
-            streamTypeOrUrl = streamTypeOrUrl or "lofi"
-
-        streams = cfg.get("streams")
-        url = ""
-        if streamTypeOrUrl in streams:
-            try:
-                url = streams.get(streamTypeOrUrl).get(streamId)
-            except:
-                return await ctx.channel.send(
-                    "Error: invalid stream type or stream id! Type '#help play' for more information."
-                )
-        else:
-            url = streamTypeOrUrl
-        if "youtube" in url:
-            video = pafy.new(url)
-            best = video.getbest()
-            playurl = best.url
-            if ctx.author.voice and ctx.author.voice.channel:
-                voice_client, is_connected = vc_check(ctx)
-                if not is_connected:
-                    vc = await ctx.author.voice.channel.connect()
-                else:
-                    vc = voice_client
-                try:
-                    vc.stop()
-                except:
-                    pass
-                vc.play(discord.FFmpegPCMAudio(playurl))
-                await ctx.channel.send(f"Now playing {url}")
-            else:
-                await ctx.channel.send("You are not connected to a voice channel.")
-        else:
-            if ctx.author.voice and ctx.author.voice.channel:
-                voice_client, is_connected = vc_check(ctx)
-                if not is_connected:
-                    vc = await ctx.author.voice.channel.connect()
-                else:
-                    vc = voice_client
-                try:
-                    vc.stop()
-                except:
-                    pass
-                vc.play(discord.FFmpegPCMAudio(url))
-                await ctx.channel.send(f"Now playing {url}")
-            else:
-                await ctx.channel.send("You are not connected to a voice channel.")
-
-    @bot.command(
-        name="dis",
-        brief="Disconnects from vc",
-        description="Disconnects from a voice channel.",
-    )
-    async def disconnect(ctx: Context):
-        if ctx.author.voice and ctx.author.voice.channel:
-            voice_client, is_connected = vc_check(ctx)
-            if is_connected:
-                await voice_client.disconnect()
-                await ctx.channel.send("Disconnected from your vc.")
 
     print("Loading bot.")
     bot.run(cfg.bot.get("token"))
