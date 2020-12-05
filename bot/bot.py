@@ -13,7 +13,7 @@ def main():
     cfg = lazyConfig.from_path(
         config=cfg_path,
     )
-    bot = commands.Bot(command_prefix=cfg.bot.get("prefix", "#"))
+    bot = commands.Bot(command_prefix=cfg.bot.get("prefix", "%"))
 
     def vc_check(ctx):
         voice_client = get(ctx.bot.voice_clients, guild=ctx.guild)
@@ -24,6 +24,12 @@ def main():
         if isinstance(error, CommandNotFound):
             return await ctx.channel.send(f"Invalid command: {error}")
         raise error
+
+    @bot.command(name="streamlist")
+    async def streams(ctx: Context):
+        await ctx.channel.send(
+            "Go to https://bot.neonradio.net/streams.html for a list of music streams."
+        )
 
     @bot.command(
         name="play",
@@ -40,7 +46,9 @@ def main():
             try:
                 url = streams.get(streamTypeOrUrl).get(streamId)
             except:
-                return await ctx.channel.send("Error: invalid stream type or stream id! Type '#help play' for more information.")
+                return await ctx.channel.send(
+                    "Error: invalid stream type or stream id! Type '#help play' for more information."
+                )
         else:
             url = streamTypeOrUrl
         if "youtube" in url:
