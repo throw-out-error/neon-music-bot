@@ -1,5 +1,6 @@
 body {
     background: #1b1b1b;
+    color: #ffffff;
 }
 
 #header {
@@ -81,10 +82,10 @@ li a:hover:not(.active) {
     -moz-border-radius: 17;
     border-radius: 17px;
     font-family: Arial;
-    font-size: 20px;
-    padding: 10px 20px 10px 20px;
-    margin-right: 25px;
-    height: 50px;
+    font-size: 18px;
+    padding: 0 20px 0 20px;
+    margin-right: 10px;
+    margin-bottom: 10px;
 }
 
 .btn:hover {
@@ -92,10 +93,15 @@ li a:hover:not(.active) {
 }
 
 a {
-    color: #ffffff;
+    color: #979797;
     text-decoration: none; /* no underline */
 }
 
 tr {
     min-width: 75%;
+}
+
+code {
+    display: block;
+    white-space: pre-wrap;
 }

@@ -1,0 +1,99 @@
+<!--
+Template Information
+Name: Discord Bot Website
+Author: Roee Lupo (aka MrSheldon)
+License: MIT
+-->
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="author" content="Theo Paris" />
+        <meta name="description" content="Yet another radio bot" />
+
+        <link rel="stylesheet" href="css/bootstrap.css" />
+        <link id="theme-style" rel="stylesheet" href="css/main.css" />
+        <title>Home > Neon Music Bot</title>
+    </head>
+
+    <body>
+        <nav id="header" class="navbar navbar-expand-lg">
+            <a class="navbar-brand" href="index.html"
+                ><img
+                    width="256"
+                    class="animated rotateIn"
+                    src="assets/logo_transparent_white.png"
+            /></a>
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <img src="assets/menu.svg"></img>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="nav navbar-nav mr-auto">
+                    <button class="btn">
+                        <a
+                            href="https://discord.com/oauth2/authorize?scope=bot&client_id=273168849283842048&permissions=8"
+                            >Invite</a
+                        ></button
+                    ><button class="btn">
+                        <a href="https://discord.gg/aksjTyJEhj"
+                            >Support Server</a
+                        ></button
+                    ><button class="btn">
+                        <a href="commands.html">Commands</a></button
+                    ><button class="btn">
+                        <a href="streams.html">24/7 Stream List</a>
+                    </button>
+                    <button class="btn">
+                        <a href="hosted.html">Self Host</a>
+                    </button>
+                </ul>
+            </div>
+        </nav>
+        <div style="margin-left: 100px; margin-right: 100px">
+            <div>
+                <h1 class="ariel">
+                    <span>Self Hosted</span>
+                </h1>
+                <div class="ariel">
+                    In order to set up the bot, you will first need to <a href="https://github.com/throw-out-error/neon-music-bot">clone the repository.</a>
+                    Next, you will need to have ffmpeg and python3 with the poetry package installed.
+                    Now, create a folder called config and create two files - one named bot.yaml and the other named streams.yaml.
+                    In <strong>bot.yaml</strong> you can enter your discord bot's token like so: <br/>
+                    <code>
+token: "abc123"
+prefix: "bot" # Optional
+                    </code>
+                    Optionally, create the predefined streams in <strong>streams.yaml</strong> like so:
+                    <code>
+lofi:
+    "1": "https://www.youtube.com/watch?v=5qap5aO4i9A"
+    "2": "https://www.youtube.com/watch?v=-5KAN9_CzSA"
+    "3": "https://www.youtube.com/watch?v=l7TxwBhtTUY"
+    "4": "https://www.youtube.com/watch?v=PbkmdRX3NL4"
+    "5": "https://www.youtube.com/watch?v=-OXi35Q9_Rg"
+    "6": "https://www.youtube.com/watch?v=I9m-1iiTjuY"
+                    </code>
+                    To run the bot simply enter the following commands in your terminal:
+                    <code>
+poetry update
+poetry shell
+poetry run start
+                    </code>
+                </div>
+            </div>
+        </div>
+        <script src="js/jquery.js"></script>
+        <script src="js/bootstrap.js"></script>
+    </body>
+</html>
