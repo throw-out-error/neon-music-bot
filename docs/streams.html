@@ -19,28 +19,47 @@ i had to add this for the content thx theoooooooo
     </head>
 
     <body>
-        <ul id="header" class="d-flex align-items-center justify-content-center">
-            <a href="index.html"
+        <nav id="header" class="navbar navbar-expand-lg">
+            <a class="navbar-brand" href="index.html"
                 ><img
-                    width="512"
+                    width="256"
                     class="animated rotateIn"
                     src="assets/logo_transparent_white.png"
             /></a>
-            <button class="btn">
-                <a
-                    href="https://discord.com/oauth2/authorize?scope=bot&client_id=273168849283842048&permissions=8"
-                    >Invite</a
-                ></button
-            ><button class="btn">
-                <a href="https://discord.gg/aksjTyJEhj"
-                    >Support Server</a
-                ></button
-            ><button class="btn">
-                <a href="commands.html">Commands</a></button
-            ><button class="btn">
-                <a href="streams.html">24/7 Stream List</a>
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <img src="assets/menu.svg"></img>
             </button>
-        </ul>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="nav navbar-nav mr-auto">
+                    <button class="btn">
+                        <a
+                            href="https://discord.com/oauth2/authorize?scope=bot&client_id=273168849283842048&permissions=8"
+                            >Invite</a
+                        ></button
+                    ><button class="btn">
+                        <a href="https://discord.gg/aksjTyJEhj"
+                            >Support Server</a
+                        ></button
+                    ><button class="btn">
+                        <a href="commands.html">Commands</a></button
+                    ><button class="btn">
+                        <a href="streams.html">24/7 Stream List</a>
+                    </button>
+                    <button class="btn">
+                        <a href="hosted.html">Self Host</a>
+                    </button>
+                </ul>
+            </div>
+        </nav>
 
         <main id="synx-sub-con" class="synx-sub-con">
             <div class="animated fadeIn" style="animation-duration: 3s">
