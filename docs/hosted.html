@@ -3,7 +3,6 @@ Template Information
 Name: Discord Bot Website
 Author: Roee Lupo (aka MrSheldon)
 License: MIT
-<3 yas neon totally made this with theo
 -->
 
 <html lang="en">
@@ -13,9 +12,10 @@ License: MIT
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="author" content="Theo Paris" />
         <meta name="description" content="Yet another radio bot" />
-        <link id="theme-style" rel="stylesheet" href="css/bootstrap.css" />
+
+        <link rel="stylesheet" href="css/bootstrap.css" />
         <link id="theme-style" rel="stylesheet" href="css/main.css" />
-        <title>Commands > Neon Music Bot</title>
+        <title>Home > Neon Music Bot</title>
     </head>
 
     <body>
@@ -60,57 +60,40 @@ License: MIT
                 </ul>
             </div>
         </nav>
-        <main id="synx-sub-con" class="synx-sub-con">
-            <div
-                class="synx-table animated fadeIn"
-                style="animation-duration: 3s"
-            >
-                <table style="text-align: center" class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Command Usage</th>
-                            <th>Command Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                #play {Youtube Video URL/Stream URL/Playlist
-                                URL/Stream Type} {Stream Id (Optional, Defaults to "1")}
-                            </td>
-                            <td>
-                                Plays either a Youtube stream, video, or
-                                playlist. (Run '#help play' for more info)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#setprefix {Prefix}</td>
-                            <td>Sets the bot's prefix for your server</td>
-                        </tr>
-                        <tr>
-                            <td>#help {category (optional)}</td>
-                            <td>Sends the help message</td>
-                        </tr>
-                        <tr>
-                            <td>#dis</td>
-                            <td>Disconnects from the voice channel</td>
-                        </tr>
-                        <tr>
-                            <!--<td>Command</td>
-							<td>Description</td>
-							</tr>
-							<tr>
-							<td>Command</td>
-							<td>Description</td>
-							</tr>
-							<tr>
-							<td>Command</td>
-							<td>Description</td>
-							</tr>-->
-                        </tr>
-                    </tbody>
-                </table>
+        <div style="margin-left: 100px; margin-right: 100px">
+            <div>
+                <h1 class="ariel">
+                    <span>Self Hosted</span>
+                </h1>
+                <div class="ariel">
+                    In order to set up the bot, you will first need to <a href="https://github.com/throw-out-error/neon-music-bot">clone the repository.</a>
+                    Next, you will need to have ffmpeg and python3 with the poetry package installed.
+                    Now, create a folder called config and create two files - one named bot.yaml and the other named streams.yaml.
+                    In <strong>bot.yaml</strong> you can enter your discord bot's token like so: <br/>
+                    <code>
+token: "abc123"
+prefix: "bot" # Optional
+                    </code>
+                    Optionally, create the predefined streams in <strong>streams.yaml</strong> like so:
+                    <code>
+lofi:
+    "1": "https://www.youtube.com/watch?v=5qap5aO4i9A"
+    "2": "https://www.youtube.com/watch?v=-5KAN9_CzSA"
+    "3": "https://www.youtube.com/watch?v=l7TxwBhtTUY"
+    "4": "https://www.youtube.com/watch?v=PbkmdRX3NL4"
+    "5": "https://www.youtube.com/watch?v=-OXi35Q9_Rg"
+    "6": "https://www.youtube.com/watch?v=I9m-1iiTjuY"
+                    </code>
+                    To run the bot simply enter the following commands in your terminal:
+                    <code>
+poetry update
+poetry shell
+poetry run start
+                    </code>
+                </div>
             </div>
-        </main>
+        </div>
+        <script src="js/jquery.js"></script>
+        <script src="js/bootstrap.js"></script>
     </body>
 </html>
