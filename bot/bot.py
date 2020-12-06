@@ -1,27 +1,18 @@
-import discord
-from discord.ext.commands.context import Context
 from discord.ext import commands
-from discord.ext.commands.errors import CommandNotFound
-from .player import setup as setupPlayer
 from .config import cfg
 
-def main():
-    bot = commands.Bot(command_prefix=cfg.bot.get("prefix", "%"))
+bot = commands.Bot(
+    command_prefix=cfg.bot.get("prefix", "%"),
+    case_insensitive=True,
+    description="Neon Radio Bot",
+)
 
-    setupPlayer(bot)
+ffmpeg_opts = {
+    "before_options": "-nostdin -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
 
-    @bot.event
-    async def on_command_error(ctx, error):
-        if isinstance(error, CommandNotFound):
-            return await ctx.channel.send(f"Invalid command: {error}")
-        else:
-            return await ctx.channel.send(f"Unknown error: {error}")
 
-    @bot.command(name="streamlist")
-    async def streams(ctx: Context):
-        await ctx.channel.send(
-            "Go to https://bot.neonradio.net/streams.html for a list of music streams."
-        )
-
-    print("Loading bot.")
+def run_bot():
     bot.run(cfg.bot.get("token"))
+    return bot
