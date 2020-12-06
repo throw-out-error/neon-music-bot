@@ -19,48 +19,64 @@ License: MIT
     </head>
 
     <body>
-        <ul id="header" class="d-flex align-items-center justify-content-center">
-            <a href="#"
+        <nav id="header" class="navbar navbar-expand-lg">
+            <a class="navbar-brand" href="index.html"
                 ><img
-                    width="512"
+                    width="256"
                     class="animated rotateIn"
                     src="assets/logo_transparent_white.png"
             /></a>
-            <button class="btn">
-                <a
-                    href="https://discord.com/oauth2/authorize?scope=bot&client_id=273168849283842048&permissions=8"
-                    >Invite</a
-                ></button
-            ><button class="btn">
-                <a href="https://discord.gg/aksjTyJEhj"
-                    >Support Server</a
-                ></button
-            ><button class="btn">
-                <a href="commands.html">Commands</a></button
-            ><button class="btn">
-                <a href="streams.html">24/7 Stream List</a>
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <img src="assets/menu.svg"></img>
             </button>
-        </ul>
-        <div class="container" style="margin-left: 100px; margin-right: 100px">
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="nav navbar-nav mr-auto">
+                    <button class="btn">
+                        <a
+                            href="https://discord.com/oauth2/authorize?scope=bot&client_id=273168849283842048&permissions=8"
+                            >Invite</a
+                        ></button
+                    ><button class="btn">
+                        <a href="https://discord.gg/aksjTyJEhj"
+                            >Support Server</a
+                        ></button
+                    ><button class="btn">
+                        <a href="commands.html">Commands</a></button
+                    ><button class="btn">
+                        <a href="streams.html">24/7 Stream List</a>
+                    </button>
+                    <button class="btn">
+                        <a href="hosted.html">Self Host</a>
+                    </button>
+                </ul>
+            </div>
+        </nav>
+        <div style="margin-left: 100px; margin-right: 100px">
             <div>
-                <h1 class="ariel" style="font-size: 60px">
+                <h1 class="ariel">
                     <span style="color: #ffffff">Neon Music Bot</span>
                 </h1>
-                <div class="ariel" style="font-size: 40px">
+                <div class="ariel">
                     <span style="color: #ffffff"
                         >Now you are able to listen to music 24 hours a day, 7
                         days a week via Discord.</span
                     >
                 </div>
-                <br />
-                <p
-                    class="d-flex flex-column align-items-center justify-content-center"
-                ></p>
             </div>
-            <h6 style="color: white">
-                Copyright © 2020 Theo Paris & Neon Development All Rights
-                Reserved.
+            <h6 style="color: rgb(243, 204, 204); position: absolute; bottom: 0;">
+                Copyright © 2020 Theo Paris & Neon Development
             </h6>
         </div>
+        <script src="js/jquery.js"></script>
+        <script src="js/bootstrap.js"></script>
     </body>
 </html>
