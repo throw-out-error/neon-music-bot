@@ -156,7 +156,7 @@ class VoiceState:
                 self.current.source.volume = self._volume
                 self.voice.play(self.current.source, after=self.play_next_song)
                 await self.current.source.channel.send(
-                    embed=self.current.create_embed()
+                    embed=self.current.create_embed() or discord.Embed(title="No Current Song")
                 )
 
             # If the song is looped
@@ -276,7 +276,7 @@ class Music(commands.Cog):
     @commands.command(name="now", aliases=["current", "playing"])
     async def _now(_, ctx: commands.Context):
         """Displays the currently playing song."""
-        embed = ctx.voice_state.current.create_embed()
+        embed = ctx.voice_state.current.create_embed() or discord.Embed(title="No Current Song")
         await ctx.send(embed=embed)
 
     @commands.command(name="pause", aliases=["pa"])
