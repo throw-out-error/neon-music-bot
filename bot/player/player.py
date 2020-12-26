@@ -12,13 +12,14 @@ e.g You might like to implement a vote before skipping the song or only allow ad
 Music bots require lots of work, and tuning. Goodluck.
 If you find any bugs feel free to ping me on discord. @Eviee#0666
 """
+from lazyConfig import ConfigList
+
 from bot.player.source import FFmpegSource, MusicSource, YTDLError, YTDLSource
 from async_timeout import timeout
 from youtube_dl import YoutubeDL
 import discord
 from discord.ext import commands
 from ..config import cfg
-from ..bot import ffmpeg_opts
 import asyncio
 import itertools
 import math
@@ -35,7 +36,8 @@ ytdlopts = {
     "quiet": True,
     "no_warnings": True,
     "default_search": "auto",
-    "source_address": "0.0.0.0",  # ipv6 addresses cause issues sometimes
+    "source_address": "0.0.0.0",
+    # ipv6 addresses cause issues sometimesTypeError: 'generator' object is not subscriptable
 }
 ytdl = YoutubeDL(ytdlopts)
 
@@ -73,6 +75,9 @@ class Song:
 
 
 class SongQueue(asyncio.Queue):
+    def __init__(self):
+        super().__init__()
+
     def __getitem__(self, item):
         if isinstance(item, slice):
             return list(itertools.islice(self._queue, item.start, item.stop, item.step))
@@ -83,7 +88,7 @@ class SongQueue(asyncio.Queue):
         return self._queue.__iter__()
 
     def __len__(self):
-        return self.qsize()
+        return len(self._queue)
 
     def clear(self):
         self._queue.clear()
@@ -111,6 +116,7 @@ class VoiceState:
         self.skip_votes = set()
 
         self.audio_player = bot.loop.create_task(self.audio_player_task())
+        self.now = None
 
     def __del__(self):
         self.audio_player.cancel()
@@ -140,7 +146,7 @@ class VoiceState:
             self.next.clear()
             self.now = None
 
-            if self.loop == False:
+            if not self.loop:
                 # Try to get the next song within 3 minutes.
                 # If no song will be added to the queue in time,
                 # the player will disconnect due to performance
@@ -155,15 +161,16 @@ class VoiceState:
 
                 self.current.source.volume = self._volume
                 self.voice.play(self.current.source, after=self.play_next_song)
-                await self.current.source.channel.send(
-                    embed=self.current.create_embed() or discord.Embed(title="No Current Song")
-                )
-
+                try:
+                    await self.current.source.channel.send(
+                        embed=self.current.create_embed()
+                    )
+                except AttributeError:
+                    await self.current.source.channel.send(
+                        discord.Embed(title="No Current Song")
+                    )
             # If the song is looped
-            elif self.loop == True:
-                self.now = discord.FFmpegPCMAudio(
-                    self.current.source.stream_url, **ffmpeg_opts
-                )
+            elif self.loop:
                 self.voice.play(self.now, after=self.play_next_song)
 
             await self.next.wait()
@@ -205,7 +212,7 @@ class Music(commands.Cog):
         for state in self.voice_states.values():
             self.bot.loop.create_task(state.stop())
 
-    def cog_check(_, ctx: commands.Context):
+    def cog_check(self, ctx: commands.Context):
         if not ctx.guild:
             raise commands.NoPrivateMessage(
                 "This command can't be used in DM channels."
@@ -217,7 +224,7 @@ class Music(commands.Cog):
         ctx.voice_state = self.get_voice_state(ctx)
 
     @commands.command(name="join", invoke_without_subcommand=True)
-    async def _join(_, ctx: commands.Context):
+    async def _join(self, ctx: commands.Context):
         """Joins a voice channel."""
 
         destination = ctx.author.voice.channel
@@ -230,7 +237,7 @@ class Music(commands.Cog):
     @commands.command(name="summon")
     @commands.has_permissions(manage_guild=True)
     async def _summon(
-        _, ctx: commands.Context, *, channel: discord.VoiceChannel = None
+        self, ctx: commands.Context, *, channel: discord.VoiceChannel = None
     ):
         """Summons the bot to a voice channel.
         If no channel was specified, it joins your channel.
@@ -243,7 +250,7 @@ class Music(commands.Cog):
 
         destination = channel or ctx.author.voice.channel
         if ctx.voice_state.voice:
-            await ctx.voice_state.voice.move_to(destination)
+            await ctx.voice_client.move_to(destination)
             return
 
         ctx.voice_state.voice = await destination.connect()
@@ -261,7 +268,7 @@ class Music(commands.Cog):
 
     @commands.command(name="volume")
     @commands.is_owner()
-    async def _volume(_, ctx: commands.Context, *, volume: int):
+    async def _volume(self, ctx: commands.Context, *, volume: int):
         """Sets the volume of the player."""
 
         if not ctx.voice_state.is_playing:
@@ -274,9 +281,12 @@ class Music(commands.Cog):
         await ctx.send("Volume of the player set to {}%".format(volume))
 
     @commands.command(name="now", aliases=["current", "playing"])
-    async def _now(_, ctx: commands.Context):
+    async def _now(self, ctx: commands.Context):
         """Displays the currently playing song."""
-        embed = ctx.voice_state.current.create_embed() or discord.Embed(title="No Current Song")
+        try:
+            embed = ctx.voice_state.current.create_embed()
+        except AttributeError:
+            embed = discord.Embed(title="No Current Song")
         await ctx.send(embed=embed)
 
     @commands.command(name="pause", aliases=["pa"])
@@ -289,7 +299,7 @@ class Music(commands.Cog):
 
     @commands.command(name="resume", aliases=["re", "res"])
     @commands.has_permissions(manage_guild=True)
-    async def _resume(_, ctx: commands.Context):
+    async def _resume(self, ctx: commands.Context):
         """Resumes a currently paused song."""
 
         if ctx.voice_state.is_playing and ctx.voice_state.voice.is_paused():
@@ -298,7 +308,7 @@ class Music(commands.Cog):
 
     @commands.command(name="stop")
     @commands.has_permissions(manage_guild=True)
-    async def _stop(_, ctx: commands.Context):
+    async def _stop(self, ctx: commands.Context):
         """Stops playing song and clears the queue."""
 
         ctx.voice_state.songs.clear()
@@ -308,7 +318,7 @@ class Music(commands.Cog):
             await ctx.message.add_reaction("⏹")
 
     @commands.command(name="skip", aliases=["s"])
-    async def _skip(_, ctx: commands.Context):
+    async def _skip(self, ctx: commands.Context):
         """Vote to skip a song. The requester can automatically skip.
         3 skip votes are needed for the song to be skipped.
         """
@@ -337,7 +347,7 @@ class Music(commands.Cog):
             await ctx.send("You have already voted to skip this song.")
 
     @commands.command(name="queue")
-    async def _queue(_, ctx: commands.Context, *, page: int = 1):
+    async def _queue(self, ctx: commands.Context, *, page: int = 1):
         """Shows the player's queue.
         You can optionally specify the page to show. Each page contains 10 elements.
         """
@@ -361,7 +371,7 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="shuffle")
-    async def _shuffle(_, ctx: commands.Context):
+    async def _shuffle(self, ctx: commands.Context):
         """Shuffles the queue."""
 
         if len(ctx.voice_state.songs) == 0:
@@ -371,7 +381,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("✅")
 
     @commands.command(name="remove")
-    async def _remove(_, ctx: commands.Context, index: int):
+    async def _remove(self, ctx: commands.Context, index: int):
         """Removes a song from the queue at a given index."""
 
         if len(ctx.voice_state.songs) == 0:
@@ -381,7 +391,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("✅")
 
     @commands.command(name="loop")
-    async def _loop(_, ctx: commands.Context):
+    async def _loop(self, ctx: commands.Context):
         """Loops the currently playing song.
         Invoke this command again to unloop the song.
         """
@@ -396,9 +406,11 @@ class Music(commands.Cog):
     @commands.command(
         name="play",
         aliases=["sing"],
-        description=f"Plays music, optionally from a youtube url or stream type. Valid stream types include: {list(cfg.get('streams', {}))}",
+        description=f"""Plays music, optionally from a youtube url or stream type. Valid stream types include:
+            {list(cfg.get('streams', {}))}
+        """,
     )
-    async def _play(self, ctx, *, search: str, streamId="1"):
+    async def _play(self, ctx, *, search: str, stream_id="1"):
         """Request a song and add it to the queue.
         This command attempts to join a valid voice channel if the bot is not already in one.
         Uses YTDL to automatically search and retrieve a song.
@@ -406,7 +418,7 @@ class Music(commands.Cog):
         ------------
         search: str [Required]
             The song to search and retrieve using YTDL. This could be a simple search, an ID or URL.
-        streamId: str [Optional]
+        stream_id: str [Optional]
             Required if the stream is a specific stream type and not a url.
         """
         await ctx.trigger_typing()
@@ -416,15 +428,13 @@ class Music(commands.Cog):
         if not vc:
             await ctx.invoke(self._join)
 
-        source = None
-        url = ""
         streams = cfg.get("streams", {})
         if not search or search == "":
             search = search or "lofi"
         if search in streams:
             try:
-                url = streams.get(search).get(streamId)
-            except:
+                url = streams.get(search).get(stream_id)
+            except ValueError:
                 return await ctx.channel.send(
                     "Error: invalid stream type or stream id! Type '#help play' for more information."
                 )
@@ -438,7 +448,7 @@ class Music(commands.Cog):
                     source = await YTDLSource.create_source(
                         ctx, search, loop=self.bot.loop
                     )
-            except:
+            except YTDLError:
                 source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
         else:
             try:
@@ -457,6 +467,7 @@ class Music(commands.Cog):
                 )
         song = Song(source)
         await ctx.voice_state.songs.put(song)
+        await ctx.send("Enqueued {}".format(str(source)))
 
     @commands.command(name="search")
     async def _search(self, ctx: commands.Context, *, search: str):
@@ -479,14 +490,29 @@ class Music(commands.Cog):
                 elif source == "cancel":
                     await ctx.send(":white_check_mark:")
                 elif source == "timeout":
-                    await ctx.send(":alarm_clock: **Time's up bud**")
+                    await ctx.send(":alarm_clock: **Time's up**")
                 else:
-                    if not ctx.voice_state.voice:
+
+                    vc = ctx.voice_client
+
+                    if not vc:
                         await ctx.invoke(self._join)
 
                     song = Song(source)
                     await ctx.voice_state.songs.put(song)
                     await ctx.send("Enqueued {}".format(str(source)))
+
+    @commands.command(
+        description="Echos message in channel; args: [channel id, message]",
+        pass_context=True,
+    )
+    async def echo(self, ctx: commands.Context, channels: str, echo_words: str):
+        if str(ctx.message.author.id) in cfg.bot.get("developers", []):
+            for channelId in channels.split(";"):
+                channel = ctx.bot.get_channel(int(channelId))
+                await channel.send(echo_words)
+        else:
+            await ctx.send("Bot developers only 😢")
 
     @_join.before_invoke
     @_play.before_invoke

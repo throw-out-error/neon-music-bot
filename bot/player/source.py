@@ -1,9 +1,13 @@
+import json
+import traceback
+
 import discord
 import functools
 from youtube_dl import YoutubeDL
 from discord.ext import commands
 import asyncio
 from ..bot import bot, ffmpeg_opts
+from youtube_search import YoutubeSearch
 
 
 class YTDLError(Exception):
@@ -19,7 +23,6 @@ class MusicSource(discord.PCMVolumeTransformer):
         self,
         ctx: commands.Context,
         source: discord.FFmpegPCMAudio,
-        *,
         data: dict,
         volume: float = 0.5,
     ):
@@ -29,22 +32,34 @@ class MusicSource(discord.PCMVolumeTransformer):
         self.channel = ctx.channel
         self.data = data
 
-        self.setup_data(data)
-
     def __str__(self):
         return "**{0.title}**".format(self)
 
     def get(self, name: str, default=None):
+        """
+        :raises ValueError: when the default value is invalid and the original value is invalid
+        """
         try:
             return self.__getattribute__(name)
-        except:
-            return default
-
-    def setup_data():
-        raise NotImplementedError()
+        except AttributeError:
+            if default:
+                return default
+            else:
+                raise ValueError(f"Invalid default value: {default}")
 
 
 class FFmpegSource(MusicSource):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        source: discord.FFmpegPCMAudio,
+        data: dict,
+        volume: float = 0.5,
+    ):
+        super().__init__(ctx, source, data, volume)
+        self.url = self.title
+        self.title = data.get("url", "")
+
     @classmethod
     async def create_source(
         cls,
@@ -54,7 +69,7 @@ class FFmpegSource(MusicSource):
         *,
         loop: asyncio.BaseEventLoop = None,
     ):
-        loop = loop or asyncio.get_event_loop()
+        loop or asyncio.get_event_loop()
 
         if data is None:
             raise YTDLError("Couldn't find anything that matches `{}`".format(search))
@@ -62,10 +77,6 @@ class FFmpegSource(MusicSource):
         return cls(
             ctx, discord.FFmpegPCMAudio(data.get("url", ""), **ffmpeg_opts), data=data
         )
-
-    def setup_data(self, data: dict):
-        self.title = data.get("url", "")
-        self.url = self.title
 
 
 class YTDLSource(MusicSource):
@@ -87,24 +98,31 @@ class YTDLSource(MusicSource):
 
     ytdl = YoutubeDL(YTDL_OPTIONS)
 
-    def __str__(self):
-        return "**{0.title}** by **{0.uploader}**".format(self)
-
-    def setup_data(self, data):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        source: discord.FFmpegPCMAudio,
+        data: dict,
+        volume: float = 0.5,
+    ):
+        super().__init__(ctx, source, data, volume)
         self.uploader = data.get("uploader")
         self.uploader_url = data.get("uploader_url", "")
         date = data.get("upload_date")
         self.upload_date = date[6:8] + "." + date[4:6] + "." + date[0:4]
+        self.stream_url = data.get("url", "")
+        self.dislikes = data.get("dislike_count")
+        self.likes = data.get("like_count")
+        self.views = data.get("view_count")
+        self.url = data.get("url", "")
+        self.tags = data.get("tags")
+        self.duration = self.parse_duration(int(data.get("duration")))
         self.title = data.get("title")
         self.thumbnail = data.get("thumbnail")
         self.description = data.get("description")
-        self.duration = self.parse_duration(int(data.get("duration")))
-        self.tags = data.get("tags")
-        self.url = data.get("url", "")
-        self.views = data.get("view_count")
-        self.likes = data.get("like_count")
-        self.dislikes = data.get("dislike_count")
-        self.stream_url = data.get("url", "")
+
+    def __str__(self):
+        return "**{0.title}** by **{0.uploader}**".format(self)
 
     @classmethod
     async def create_source(
@@ -134,7 +152,7 @@ class YTDLSource(MusicSource):
                     "Couldn't find anything that matches `{}`".format(search)
                 )
 
-        webpage_url = process_info["webpage_url"]
+        webpage_url = process_info["url"]
         partial = functools.partial(cls.ytdl.extract_info, webpage_url, download=False)
         processed_info = await loop.run_in_executor(None, partial)
 
@@ -147,7 +165,7 @@ class YTDLSource(MusicSource):
             info = None
             while info is None:
                 try:
-                    info = processed_info["entries"].pop(0)
+                    info = list(processed_info["entries"]).pop(0)
                 except IndexError:
                     raise YTDLError(
                         "Couldn't retrieve any matches for `{}`".format(webpage_url)
@@ -164,32 +182,28 @@ class YTDLSource(MusicSource):
         channel = ctx.channel
         loop = loop or asyncio.get_event_loop()
 
-        cls.search_query = "%s%s:%s" % ("ytsearch", 10, "".join(search))
-
-        partial = functools.partial(
-            cls.ytdl.extract_info, cls.search_query, download=False, process=False
-        )
-        info = await loop.run_in_executor(None, partial)
-
-        cls.search = {}
-        cls.search["title"] = f"Search results for:\n**{search}**"
-        cls.search["type"] = "rich"
-        cls.search["color"] = 7506394
-        cls.search["author"] = {
-            "name": f"{ctx.author.name}",
-            "url": f"{ctx.author.avatar_url}",
-            "icon_url": f"{ctx.author.avatar_url}",
+        cls.search = {
+            "title": f"Search results for:\n**{search}**",
+            "type": "rich",
+            "color": 7506394,
+            "author": {
+                "name": f"{ctx.author.name}",
+                "url": f"{ctx.author.avatar_url}",
+                "icon_url": f"{ctx.author.avatar_url}",
+            },
         }
 
         lst = []
-
-        for e in info["entries"]:
-            # lst.append(f'`{info["entries"].index(e) + 1}.` {e.get("title")} **[{YTDLSource.parse_duration(int(e.get("duration")))}]**\n')
-            VId = e.get("id")
-            VUrl = "https://www.youtube.com/watch?v=%s" % (VId)
-            lst.append(
-                f'`{info["entries"].index(e) + 1}.` [{e.get("title")}]({VUrl})\n'
-            )
+        count = 0
+        yt = YoutubeSearch(search, max_results=10).to_json()
+        info = json.loads(yt)
+        for e in info["videos"]:
+            # lst.append(f'`{info["entries"].index(e) + 1}.` {e.get("title")} **[{YTDLSource.parse_duration(int(
+            # e.get("duration")))}]**\n')
+            v_id = e.get("id")
+            v_url = "https://www.youtube.com/watch?v=%s" % v_id
+            lst.append(f'`{count + 1}.` [{e.get("title")}]({v_url})\n')
+            count += 1
 
         lst.append("\n**Type a number to make a choice, Type `cancel` to exit**")
         cls.search["description"] = "\n".join(lst)
@@ -199,7 +213,7 @@ class YTDLSource(MusicSource):
 
         def check(msg):
             return (
-                msg.content.isdigit() == True
+                msg.content.isdigit() is True
                 and msg.channel == channel
                 or msg.content == "cancel"
                 or msg.content == "Cancel"
@@ -212,19 +226,17 @@ class YTDLSource(MusicSource):
             rtrn = "timeout"
 
         else:
-            if m.content.isdigit() == True:
+            if m.content.isdigit() is True:
                 sel = int(m.content)
                 data = None
                 if 0 < sel <= 10:
-                    for key, value in info.items():
-                        if key == "entries":
-                            """data = value[sel - 1]"""
-                            VId = value[sel - 1]["id"]
-                            VUrl = "https://www.youtube.com/watch?v=%s" % (VId)
-                            partial = functools.partial(
-                                cls.ytdl.extract_info, VUrl, download=False
-                            )
-                            data = await loop.run_in_executor(None, partial)
+                    v_id = info["videos"][sel - 1]["id"]
+                    v_url = "https://www.youtube.com/watch?v=%s" % v_id
+                    # print(v_url)
+                    partial = functools.partial(
+                        cls.ytdl.extract_info, v_url, download=False
+                    )
+                    data = await loop.run_in_executor(None, partial)
                     rtrn = cls(
                         ctx,
                         discord.FFmpegPCMAudio(data["url"], **ffmpeg_opts),
