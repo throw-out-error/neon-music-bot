@@ -57,8 +57,8 @@ class FFmpegSource(MusicSource):
         volume: float = 0.5,
     ):
         super().__init__(ctx, source, data, volume)
-        self.url = self.title
         self.title = data.get("url", "")
+        self.url = self.title
 
     @classmethod
     async def create_source(
@@ -152,7 +152,7 @@ class YTDLSource(MusicSource):
                     "Couldn't find anything that matches `{}`".format(search)
                 )
 
-        webpage_url = process_info["url"]
+        webpage_url = process_info.get("webpage_url", "")
         partial = functools.partial(cls.ytdl.extract_info, webpage_url, download=False)
         processed_info = await loop.run_in_executor(None, partial)
 

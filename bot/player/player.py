@@ -19,7 +19,7 @@ from async_timeout import timeout
 from youtube_dl import YoutubeDL
 import discord
 from discord.ext import commands
-from ..config import cfg
+from ..config import cfg, check_owner
 import asyncio
 import itertools
 import math
@@ -60,15 +60,15 @@ class Song:
                 description=f"```css\n{self.source.get('title', 'Untitled Song')}\n```",
                 color=discord.Color.blurple(),
             )
-            .add_field(name="Duration", value=self.source.get("duration", 0))
-            .add_field(name="Requested by", value=self.requester.mention)
-            .add_field(
+                .add_field(name="Duration", value=self.source.get("duration", 0))
+                .add_field(name="Requested by", value=self.requester.mention)
+                .add_field(
                 name="Uploader",
                 value=f"[{self.source.get('uploader', 'Unknown')}]({self.source.get('uploader_url', '')})",
             )
-            .add_field(name="URL", value=f"[Click]({self.source.get('url', '')})")
-            .set_thumbnail(url=self.source.get("thumbnail", ""))
-            .set_author(name=self.requester.name, icon_url=self.requester.avatar_url)
+                .add_field(name="URL", value=f"[Click]({self.source.get('url', '')})")
+                .set_thumbnail(url=self.source.get("thumbnail", ""))
+                .set_author(name=self.requester.name, icon_url=self.requester.avatar_url)
         )
 
         return embed
@@ -290,12 +290,15 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="pause", aliases=["pa"])
-    @commands.has_permissions(manage_guild=True)
     async def _pause(self, ctx: commands.Context):
         """Pauses the currently playing song."""
-        if ctx.voice_state.is_playing and ctx.voice_state.voice.is_playing():
-            ctx.voice_state.voice.pause()
-            await ctx.message.add_reaction("⏯")
+        msg: discord.Message = ctx.message
+        if check_owner(ctx) or msg.author.server_permissions.manage_server:
+            if ctx.voice_state.is_playing and ctx.voice_state.voice.is_playing():
+                ctx.voice_state.voice.pause()
+                await msg.add_reaction("⏯")
+        else:
+            raise Exception("You do not have permission to run this :(")
 
     @commands.command(name="resume", aliases=["re", "res"])
     @commands.has_permissions(manage_guild=True)
