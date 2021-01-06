@@ -12,7 +12,7 @@ packages = [{ include = "bot" }]
 python = ">=3.8"
 "discord.py" = { extras = ["voice"], version = "^1.5.1" }
 lazyConfig = "^0.5"
-youtube_dl = "^2020.12.2"
+youtube_dl = "^2021.0.0"
 youtube-search = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
